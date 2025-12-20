@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Trophy, Zap, Users, Award, Moon, Sun } from "lucide-react";
+import { NavLink } from 'react-router-dom';
 
 const Onboarding = () => {
     const [isDark, setIsDark] = useState(false);
@@ -8,11 +9,6 @@ const Onboarding = () => {
     const toggleTheme = () => {
         setIsDark(!isDark);
         document.documentElement.classList.toggle('dark');
-    };
-
-    const handleGetStarted = () => {
-        // Navigate to login page
-        window.location.href = '/login';
     };
 
     return (
@@ -88,21 +84,19 @@ const Onboarding = () => {
 
                     {/* CTA Buttons */}
                     <div className="space-y-3 mb-6">
-                        <Button
-                            onClick={handleGetStarted}
-                            data-testid="button-get-started"
-                            className="w-full h-12 rounded-full text-base font-bold"
-                        >
-                            Get Started
-                        </Button>
-                        <Button
-                            onClick={handleGetStarted}
-                            data-testid="button-login"
-                            variant="outline"
-                            className="w-full h-12 rounded-full text-base font-semibold"
-                        >
-                            Log In
-                        </Button>
+                        <NavLink to="/auth/login">
+                            <Button
+                                className="w-full h-12 rounded-full text-base font-bold"
+                            >
+                                Get Started
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="w-full h-12 rounded-full text-base font-semibold"
+                            >
+                                Log In
+                            </Button>
+                        </NavLink>
                     </div>
 
                     {/* Footer Text */}
