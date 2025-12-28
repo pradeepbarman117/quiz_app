@@ -13,18 +13,20 @@ import QuizPlayPage from '@/pages/quiz/QuizPlayPage'
 import QuizResultPage from '@/pages/quiz/QuizResultPage'
 import QuizRewardPage from '@/pages/quiz/QuizRewardPage'
 import RewardPage from '@/pages/reward/RewardPage'
-import React from 'react'
+import React, { Fragment } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
+import ProtectedRoute from './ProtectedRoute'
+import PublicRoute from './PublicRoute'
 
 const router = createBrowserRouter([
     {
         path: '/',
-        element: <AppLayout />,
+        element: <ProtectedRoute><AppLayout /></ProtectedRoute>,
         children: [
-            { index: true, element: <OnboardingPage /> },
             {
-                path: '/home',
+                path: '/',
                 element: <HomePage />,
+                index: true,
             },
             {
                 path: 'quiz',
@@ -71,30 +73,41 @@ const router = createBrowserRouter([
             },
             {
                 path: '/leaderboard',
-                element:<LeaderboardPage/>,
+                element: <LeaderboardPage />,
             },
             {
                 path: '/rewards',
-                element:<RewardPage/>,
+                element: <RewardPage />,
             },
             {
-                path:'/profile',
-                element:<ProfilePage/>,
+                path: '/profile',
+                element: <ProfilePage />,
             }
         ],
     },
     {
-        path: '/auth/login',
-        element: <LoginPage />,
+        path: '/auth',
+        element: <PublicRoute />,
+        children: [
+            {
+                path: 'login',
+                element: <LoginPage />,
+            },
+            {
+                path: 'register',
+                element: <RegisterPage />,
+            },
+            {
+                path: 'forgot-password',
+                element: <ForgetPasswordPage />,
+            }
+        ]
     },
     {
-        path: '/auth/register',
-        element: <RegisterPage />,
-    },
-    {
-        path: '/auth/forgot-password',
-        element: <ForgetPasswordPage />,
+        path: '/onboarding',
+        element: <PublicRoute><OnboardingPage /></PublicRoute>,
     }
+
 
 ])
 

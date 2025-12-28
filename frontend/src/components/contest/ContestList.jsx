@@ -140,7 +140,7 @@ export default function ContestList() {
             maxPlayers: 2,
             status: "open",
             startTime: new Date(Date.now() + 60000),
-            redirect: "/quiz/contest/duel/upsc",
+            redirect: "/contest/duel/upsc",
         },
         {
             id: "1v1-2",
@@ -152,7 +152,7 @@ export default function ContestList() {
             maxPlayers: 2,
             status: "open",
             startTime: new Date(Date.now() + 120000),
-            redirect: "/quiz/contest/duel/science",
+            redirect: "/contest/duel/science",
         },
     ];
 
@@ -168,7 +168,7 @@ export default function ContestList() {
             maxPlayers: 50,
             status: "open",
             startTime: new Date(Date.now() + 600000),
-            redirect: "/quiz/contest/multiplayer/sceince",
+            redirect: "/contest/multiplayer/sceince",
         },
         {
             id: "weekly-2",
@@ -180,7 +180,7 @@ export default function ContestList() {
             maxPlayers: 50,
             status: "full",
             startTime: new Date(Date.now() + 300000),
-            redirect: "/quiz/contest/multiplayer/sceince",
+            redirect: "/contest/multiplayer/sceince",
         },
         {
             id: "weekly-3",
@@ -192,7 +192,7 @@ export default function ContestList() {
             maxPlayers: 40,
             status: "open",
             startTime: new Date(Date.now() + 900000),
-            redirect: "/quiz/contest/multiplayer/sceince",
+            redirect: "/contest/multiplayer/sceince",
         },
     ];
 

@@ -15,7 +15,7 @@ const ForgotPassword = () => {
 
     if (email) {
       // here you can call your API later
-      setTimeout(() => navigate("/login"), 2000);
+      setTimeout(() => navigate("/auth/login"), 2000);
     }
   };
 
@@ -27,7 +27,7 @@ const ForgotPassword = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/login")}
+            onClick={() => navigate("/auth/login")}
             data-testid="button-back"
             className="rounded-full"
           >
