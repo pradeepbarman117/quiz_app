@@ -32,7 +32,7 @@ const DailyQuizInstruction = () => {
               </div>
               <div className="flex items-center gap-2 bg-warning/10 px-4 py-2 rounded-full">
                 <Trophy className="w-5 h-5 text-warning" />
-                <span className="font-bold text-warning text-lg">+100</span>
+                <span className="font-bold text-warning text-lg">+15</span>
               </div>
             </div>
           </Card>

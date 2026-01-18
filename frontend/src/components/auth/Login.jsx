@@ -9,10 +9,11 @@ import { useLogin } from '@/query/hooks/auth/useAuth'
 import { loginSchema } from '@/validation/auth/auth.validator'
 import { allowOnly } from '@/utils/allowOnly'
 import { toast, Toaster } from 'sonner'
+import { useAuth } from '@/context/AuthContext'
 
 const Login = () => {
   const navigate = useNavigate()
-  const { mutate: loginMutation, isLoading } = useLogin()
+  const { mutate: loginMutation, isPending } = useLogin()
 
   const formik = useFormik({
     initialValues: {
@@ -22,15 +23,13 @@ const Login = () => {
     validationSchema: loginSchema,
     onSubmit: (values, { setSubmitting, setStatus, setErrors }) => {
       setStatus(null)
-
       loginMutation(values, {
         onSuccess: () => {
-          toast.success('Login Successful', { position: 'top-center' })
+          toast.success('Login Successful', { position: 'top-center' });
         },
 
         onError: (err) => {
           const response = err?.response?.data
-          console.log(err, 'err')
           // Field-level errors from backend
           if (response?.errors) {
             setErrors(response.errors)
@@ -147,10 +146,10 @@ const Login = () => {
             {/* Submit */}
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isPending}
               className="w-full h-12 rounded-full font-bold text-base"
             >
-              {isLoading ? 'Logging in...' : 'Log In'}
+              {isPending ? 'Logging in...' : 'Log In'}
             </Button>
 
           </form>

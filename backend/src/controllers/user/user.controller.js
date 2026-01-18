@@ -1,79 +1,154 @@
 const bcrypt = require('bcryptjs');
-const { Op, where } = require('sequelize');
+const { Op, where, Sequelize } = require('sequelize');
 const db = require('@models/index.js'); // Adjust path as needed
 const { hashPassword } = require('@utils/bcrypt');
+const ApiError = require('../../utils/apiError');
+const asyncHandler = require('../../utils/asyncHandler');
+const { DEFAULTS } = require('../../utils/constants');
+const ApiResponse = require('../../utils/apiResponse');
+const helpers = require('../../utils/helpers');
 
 // ============================================
 // USER CONTROLLER - For Regular Users
 // ============================================
 const userController = {
-    // User Registration (Public)
-    register: async (req, res) => {
-        try {
-            const {
-                full_name,
-                username,
-                mobile,
-                password,
-            } = req.body;
+    /**
+ * @desc    Register new user
+ * @route   POST /api/v1/auth/register
+ * @access  Public
+ */
+    register: asyncHandler(async (req, res, next) => {
+        const { username, email, password, phone, referralCode } = req.body;
 
-
-
-            const isExistingUser = await db.User.findOne({
-                where:{[Op.or]: [
-                    { mobile: mobile },
-                    { username: username }
-                ]}
-            });
-
-            if (isExistingUser) {
-                return res.status(409).send({
-                    success: false,
-                    message: 'User with given mobile number or username already exists'
-                });
+        // Check if user already exists
+        const existingUser = await db.User.findOne({
+            where: {
+                [Sequelize.Op.or]: [
+                    { email },
+                    { username }
+                ]
             }
+        });
 
+        if (existingUser) {
+            if (existingUser.email === email) {
+                throw ApiError.conflict('Email already registered');
+            }
+            if (existingUser.username === username) {
+                throw ApiError.conflict('Username already taken');
+            }
+        }
+
+        // Check referral code if provided
+        let referrer = null;
+        if (referralCode) {
+            referrer = await db.User.findOne({ where: { referralCode } });
+            if (!referrer) {
+                throw ApiError.badRequest('Invalid referral code');
+            }
+        }
+
+        // Start transaction
+        const transaction = await db.sequelize.transaction();
+
+        try {
             // Hash password
-            const hashedPassword = await hashPassword(password);
+            const hashedPassword = hashPassword(password);
 
             // Create user
             const user = await db.User.create({
-                mobile,
-                country_code: '+91',
-                password: hashedPassword,
-                full_name,
                 username,
-            });
+                email,
+                password: hashedPassword,
+                phone,
+                referralCode: helpers.generateReferralCode(username),
+                referredBy: referrer?.id || null
+            }, { transaction });
+
+            // Create profile
+            await db.UserProfile.create({
+                userId: user.id,
+                displayName: username
+            }, { transaction });
+
+            // Create stats
+            await db.UserStats.create({
+                userId: user.id
+            }, { transaction });
+
+            // Create wallet with signup bonus
+            await db.Wallet.create({
+                userId: user.id,
+                coins: DEFAULTS.SIGNUP_BONUS,
+                totalEarned: DEFAULTS.SIGNUP_BONUS
+            }, { transaction });
+
+            // Create signup bonus transaction
+            await db.Transaction.create({
+                userId: user.id,
+                walletId: user.id, // Will be same as user id for first wallet
+                type: 'CREDIT',
+                category: 'SIGNUP_BONUS',
+                currencyType: 'COINS',
+                amount: DEFAULTS.SIGNUP_BONUS,
+                balanceBefore: 0,
+                balanceAfter: DEFAULTS.SIGNUP_BONUS,
+                description: 'Welcome signup bonus'
+            }, { transaction });
+
+            // If referred, give referral bonus to referrer
+            if (referrer) {
+                const referrerWallet = await db.Wallet.findOne({
+                    where: { userId: referrer.id },
+                    transaction
+                });
+
+                if (referrerWallet) {
+                    const newBalance = referrerWallet.coins + DEFAULTS.REFERRAL_BONUS;
+
+                    await referrerWallet.update({
+                        coins: newBalance,
+                        totalEarned: referrerWallet.totalEarned + DEFAULTS.REFERRAL_BONUS
+                    }, { transaction });
+
+                    await db.Transaction.create({
+                        userId: referrer.id,
+                        walletId: referrerWallet.id,
+                        type: 'CREDIT',
+                        category: 'REFERRAL_BONUS',
+                        currencyType: 'COINS',
+                        amount: DEFAULTS.REFERRAL_BONUS,
+                        balanceBefore: referrerWallet.coins,
+                        balanceAfter: newBalance,
+                        referenceId: user.id,
+                        description: `Referral bonus: ${username} joined`
+                    }, { transaction });
+                }
+            }
+
+            await transaction.commit();
+
+            // Generate JWT token
+            const token = jwt.sign(
+                { id: user.id, email: user.email, role: user.role },
+                process.env.JWT_SECRET,
+                { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+            );
 
             // Remove password from response
             const userResponse = user.toJSON();
             delete userResponse.password;
 
-            return res.status(201).send({
-                success: true,
-                message: 'User registered successfully',
-                data: userResponse
-            });
+            return ApiResponse.created(res, {
+                user: userResponse,
+                token
+            }, 'Registration successful');
 
         } catch (error) {
-            if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Validation error',
-                    errors: error.errors.map(e => ({
-                        field: e.path,
-                        message: e.message
-                    }))
-                });
-            }
-
-            console.error('Register user error:', error);
-            return res.status(500).send({
-                success: false,
-                message: 'Internal server error'
-            });
+            await transaction.rollback();
+            throw error;
         }
-    },
+    }),
 
     // Get Own Profile (Authenticated User)
     getProfile: async (req, res) => {
@@ -226,7 +301,7 @@ const userController = {
                 });
             }
 
-            await user.update({ 
+            await user.update({
                 is_email_verified: true,
                 status: user.status === 'pending' ? 'active' : user.status
             });
